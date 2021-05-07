@@ -1,9 +1,8 @@
 import time
-import telegram_send
 import requests
 import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
-from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram import Update, constants
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext, ConversationHandler
 import logging
 import re
@@ -93,7 +92,7 @@ class CovidVaccineBot:
             currentDate = datetime.datetime.now().strftime("%d-%m-%Y")
             for pincode in pincodes:
                 url = "https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByPin?pincode=" + pincode + "&date=" + currentDate
-                response = requests.get(url, headers={
+                response = requests.get(url, headers = {
                     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:88.0) Gecko/20100101 Firefox/88.0"
                 })
                 if response.status_code == 200:
@@ -105,12 +104,21 @@ class CovidVaccineBot:
             for centre in centres:
                 sessions = centre['sessions']
                 sessionDetails = ""
+                totalAvailable = 0
                 for session in sessions:
                     if session['available_capacity'] > 0:
                         found = True
-                        sessionDetails += "\n\n{}\nAge: {}+\nAvailable: {}\nVaccine: {}\nSlots:\n{}".format(session["date"], session["min_age_limit"], session["available_capacity"], session["vaccine"], session["slots"])
+                        sessionDetails += "\n\n{} Available\n{} - {}+\nVaccine: {}\nSlots:\n{}".format(session["available_capacity"], session["date"], session["min_age_limit"], session["vaccine"], session["slots"])
+                        totalAvailable += session['available_capacity']
+                    elif not silentSearch:
+                        sessionDetails += "\n\nBooked\n{} - {}+\nVaccine: {}".format(session["date"], session["min_age_limit"], session["vaccine"])
                 if sessionDetails != "":
-                    self.updater.bot.sendMessage(chatId, "{}\n{}\n{}\n\n{} to {}\nFees: {}{}".format(centre["name"], centre["address"], centre["pincode"], centre["from"], centre["to"], centre["fee_type"], sessionDetails))           
+                    self.updater.bot.sendMessage(
+                        chatId, 
+                        "<strong>{}</strong>\n{}\n{}\n{}\n\n{} to {}\nFees: {}{}"
+                            .format("{} Available".format(totalAvailable) if totalAvailable > 0 else "Booked", centre["name"], centre["address"], centre["pincode"], centre["from"], centre["to"], centre["fee_type"], sessionDetails),
+                        constants.PARSEMODE_HTML
+                    )
                     
             if not found and not silentSearch:
                 self.updater.bot.sendMessage(chatId, "Couldn't find any session")
