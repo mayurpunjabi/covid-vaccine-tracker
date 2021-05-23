@@ -14,3 +14,13 @@ pip install requests
 3. Assign the token you got from the [@BotFather](https://t.me/BotFather) to the *TOKEN* variable in the main.py file.
 4. Run the main.py file.
 5. Open your telegram app and search for the bot you created. Now you can use your bot from there.
+
+# :hammer: Build EXE (optional):
+1. Install pyinstaller module
+```sh
+pip install pyinstaller
+```
+2. Execute command
+```sh
+pyinstaller --onefile --console --name "COVID Vaccine Tracker" main.py
+```
